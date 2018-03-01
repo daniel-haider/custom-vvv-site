@@ -58,8 +58,9 @@ if ! $(noroot wp core is-installed); then
   echo "Activating plugins ..."
   noroot wp plugin activate --all
 
-  echo "Copy roots sage theme ..."
-  cp -a /vagrant/default-theme/. ${VVV_PATH_TO_SITE}/public_html/wp-content/themes/${VVV_SITE_NAME}
+  echo "Add roots sage theme ..."
+  cd ${VVV_PATH_TO_SITE}/public_html/wp-content/themes/
+  composer create-project roots/sage ${VVV_SITE_NAME}
 
   echo "Activating roots sage theme ..."
   noroot wp theme activate ${VVV_SITE_NAME}
