@@ -45,6 +45,28 @@ if ! $(noroot wp core is-installed); then
   fi
 
   noroot wp core ${INSTALL_COMMAND} --url="${DOMAIN}" --quiet --title="${SITE_TITLE}" --admin_name=admin --admin_email="admin@local.test" --admin_password="password"
+
+  echo "Deactivating wordpress default plugins ..."
+  noroot wp plugin delete $(noroot wp plugin list --field=name)
+
+  echo "Deleting wordpress default plugins ..."
+  noroot wp plugin delete $(noroot wp plugin list --field=name)
+
+  echo "Copying default plugins into plugins dir ..."
+  cp -a /vagrant/default-plugins/. ${VVV_PATH_TO_SITE}/public_html/wp-content/plugins/
+
+  echo "Activating plugins ..."
+  noroot wp plugin activate --all
+
+  echo "Copy roots sage theme ..."
+  cp -a /vagrant/default-theme/. ${VVV_PATH_TO_SITE}/public_html/wp-content/themes/${VVV_SITE_NAME}
+
+  echo "Activating roots sage theme ..."
+  noroot wp theme activate ${VVV_SITE_NAME}
+
+  echo "Deleting inactive themes ..."
+  noroot wp theme delete $(noroot wp theme list --status=inactive --field=name)
+
 else
   echo "Updating WordPress Stable..."
   cd ${VVV_PATH_TO_SITE}/public_html
@@ -61,3 +83,5 @@ else
     sed -i "s#{{TLS_CERT}}##" "${VVV_PATH_TO_SITE}/provision/vvv-nginx.conf"
     sed -i "s#{{TLS_KEY}}##" "${VVV_PATH_TO_SITE}/provision/vvv-nginx.conf"
 fi
+
+# add acf-options page
