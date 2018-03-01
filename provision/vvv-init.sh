@@ -47,7 +47,7 @@ if ! $(noroot wp core is-installed); then
   noroot wp core ${INSTALL_COMMAND} --url="${DOMAIN}" --quiet --title="${SITE_TITLE}" --admin_name=admin --admin_email="admin@local.test" --admin_password="password"
 
   echo "Deactivating wordpress default plugins ..."
-  noroot wp plugin delete $(noroot wp plugin list --field=name)
+  noroot wp plugin deactivate $(noroot wp plugin list --field=name)
 
   echo "Deleting wordpress default plugins ..."
   noroot wp plugin delete $(noroot wp plugin list --field=name)
