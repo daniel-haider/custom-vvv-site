@@ -60,7 +60,7 @@ if ! $(noroot wp core is-installed); then
 
   echo "Add roots sage theme ..."
   cd ${VVV_PATH_TO_SITE}/public_html/wp-content/themes/
-  composer create-project roots/sage ${VVV_SITE_NAME}
+  noroot composer create-project roots/sage ${VVV_SITE_NAME}
 
   echo "Activating roots sage theme ..."
   noroot wp theme activate ${VVV_SITE_NAME}
