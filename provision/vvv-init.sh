@@ -64,6 +64,9 @@ if ! $(noroot wp core is-installed); then
   cd ${VVV_PATH_TO_SITE}/public_html/wp-content/themes/${VVV_SITE_NAME}
   noroot composer install
 
+  echo "Add acf options page ..."
+  printf "\nif( function_exists('acf_add_options_page') ) {\n  acf_add_options_page();\n}\n" >> resources/functions.php
+
   echo "Activating roots sage theme ..."
   noroot wp theme activate ${VVV_SITE_NAME}/resources
 
