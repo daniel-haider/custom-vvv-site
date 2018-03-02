@@ -65,8 +65,8 @@ if ! $(noroot wp core is-installed); then
   #echo "Activating roots sage theme ..."
   #noroot wp theme activate ${VVV_SITE_NAME}
 
-  echo "Deleting inactive themes ..."
-  noroot wp theme delete $(noroot wp theme list --status=inactive --field=name)
+  #echo "Deleting inactive themes ..."
+  #noroot wp theme delete $(noroot wp theme list --status=inactive --field=name)
 
 else
   echo "Updating WordPress Stable..."
