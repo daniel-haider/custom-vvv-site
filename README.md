@@ -110,4 +110,102 @@ custom:
 ```
 Defines the DB name for the installation.
 
+## Syncing Databases
+
+based on: https://zach-adams.com/2015/07/keep-varying-vagrant-vagrants-vvv-in-sync-across-multiple-computers/
+
+### Copy databases to wp-content/.db folder for every site on vagrant halt:
+create vagrant_halt_custom with following content in config/homebin:
+```
+#!/bin/bash
+#
+# Create individual SQL files for each database. These files
+# are imported automatically during an initial provision if
+# the databases exist per the import-sql.sh process.
+DATE=$(date +"%Y%m%d%H%M%S")
+mysql -e 'show databases' | \
+grep -v -F "information_schema" | \
+grep -v -F "performance_schema" | \
+grep -v -F "mysql" | \
+grep -v -F "test" | \
+grep -v -F "Database" | \
+while read dbname; do
+  mysqldump -uroot "$dbname" > /srv/database/backups/"$dbname".sql &&
+  mkdir -p /srv/www/"$dbname"/public_html/wp-content/.db &&
+  cp /srv/database/backups/"$dbname".sql /srv/www/"$dbname"/public_html/wp-content/.db/"$dbname"_$DATE.sql &&
+  echo "Database $dbname backed up (custom) ..."
+done
+```
+
+Then run "vagrant up --provision" (you need to provision all sites, when running with --provision-with the files won't be copied)
+Then ssh into your box, goto bin/ and:
+```
+sudo chmod 755 ~/bin/vagrant_halt_custom
+sudo chmod +x ~/bin/vagrant_halt_custom
+```
+
+### Import sites in vagrant up
+create file import-custom-sql.sh with following content in database folder:
+```
+#!/bin/bash
+#
+# Import provided SQL files in to MariaDB/MySQL.
+#
+# The files in the {vvv-dir}/database/backups/ directory should be created by
+# mysqldump or some other export process that generates a full set of SQL commands
+# to create the necessary tables and data required by a database.
+#
+# For an import to work properly, the SQL file should be named `db_name.sql` in which
+# `db_name` matches the name of a database already created in {vvv-dir}/database/init-custom.sql
+# or {vvv-dir}/database/init.sql.
+#
+# If a filename does not match an existing database, it will not import correctly.
+#
+# If tables already exist for a database, the import will not be attempted again. After an
+# initial import, the data will remain persistent and available to MySQL on future boots
+# through {vvv-dir}/database/data
+#
+# Let's begin...
+
+# Move into the newly mapped backups directory, where mysqldump(ed) SQL files are stored
+printf "\nStart MariaDB Database Import\n"
+cd /srv/database/backups/
+
+# Parse through each file in the directory and use the file name to
+# import the SQL file into the database of the same name
+sql_count=`ls -1 *.sql 2>/dev/null | wc -l`
+if [ $sql_count != 0 ]
+then
+        for file in $( ls *.sql )
+        do
+        pre_dot=${file%%.sql}
+        mysql_cmd='SHOW TABLES FROM `'$pre_dot'`' # Required to support hypens in database names
+        db_exist=`mysql -u root -proot --skip-column-names -e "$mysql_cmd"`
+        if [ "$?" != "0" ]
+        then
+                printf "  * Error - Create $pre_dot database via init-custom.sql before attempting import\n\n"
+        else
+                if [ "" == "$db_exist" ]
+                then
+                        printf "mysql -u root -proot $pre_dot < $pre_dot.sql\n"
+                        mysql -u root -proot $pre_dot < $pre_dot.sql
+                        printf "  * Import of $pre_dot successful\n"
+                else # tables exist - search for db in wp-content/.db folder
+                        filename=`cd /srv/www/"$pre_dot"/public_html/wp-content/.db/ &> /dev/null && (ls | tail -1)`
+                        if [[ $filename ]]
+                        then
+                                printf "  * Updating $pre_dot with contents of $filename\n"
+                        # if found, import latest db backup
+                        else
+                        # if not found, skip it
+                                printf "  * Skipped import of $pre_dot - tables exist and no db found in wp-content/.db\n"
+                        fi
+                fi
+        fi
+        done
+        printf "Databases imported\n"
+else
+        printf "No custom databases to import\n"
+fi
+```
 
