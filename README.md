@@ -1,114 +1,5 @@
 # VVV Custom site template
-For when you just need a simple dev site
-
-## Overview
-This template will allow you to create a WordPress dev environment using only `vvv-custom.yml`.
-
-The supported environments are:
-- A single site
-- A subdomain multisite
-- A subdirectory multisite
-
-# Configuration
-
-### The minimum required configuration:
-
-```
-my-site:
-  repo: https://github.com/Varying-Vagrant-Vagrants/custom-site-template
-  hosts:
-    - my-site.test
-```
-| Setting    | Value       |
-|------------|-------------|
-| Domain     | my-site.test |
-| Site Title | my-site.test |
-| DB Name    | my-site     |
-| Site Type  | Single      |
-| WP Version | Latest      |
-
-### Minimal configuration with custom domain and WordPress Nightly:
-
-```
-my-site:
-  repo: https://github.com/Varying-Vagrant-Vagrants/custom-site-template
-  hosts:
-    - foo.test
-  custom:
-    wp_version: nightly
-```
-| Setting    | Value       |
-|------------|-------------|
-| Domain     | foo.test     |
-| Site Title | foo.test     |
-| DB Name    | my-site     |
-| Site Type  | Single      |
-| WP Version | Nightly     |
-
-### WordPress Multisite with Subdomains:
-
-```
-my-site:
-  repo: https://github.com/Varying-Vagrant-Vagrants/custom-site-template
-  hosts:
-    - multisite.test
-    - site1.multisite.test
-    - site2.multisite.test
-  custom:
-    wp_type: subdomain
-```
-| Setting    | Value               |
-|------------|---------------------|
-| Domain     | multisite.test      |
-| Site Title | multisite.test      |
-| DB Name    | my-site             |
-| Site Type  | Subdomain Multisite |
-| WP Version | Nightly             |
-
-## Configuration Options
-
-```
-hosts:
-    - foo.test
-    - bar.test
-    - baz.test
-```
-Defines the domains and hosts for VVV to listen on. 
-The first domain in this list is your sites primary domain.
-
-```
-custom:
-    site_title: My Awesome Dev Site
-```
-Defines the site title to be set upon installing WordPress.
-
-```
-custom:
-    wp_version: 4.6.4
-```
-Defines the WordPress version you wish to install.
-Valid values are:
-- nightly
-- latest
-- a version number
-
-Older versions of WordPress will not run on PHP7, see this page on [how to change PHP version per site](https://varyingvagrantvagrants.org/docs/en-US/adding-a-new-site/changing-php-version/).
-
-```
-custom:
-    wp_type: single
-```
-Defines the type of install you are creating.
-Valid values are:
-- single
-- subdomain
-- subdirectory
-
-```
-custom:
-    db_name: super_secet_db_name
-```
-Defines the DB name for the installation.
+For when you just need a simple dev site ... with some additional features for collaborating purposes :) :)
 
 ## Syncing Databases
 
@@ -195,6 +86,8 @@ then
                         if [[ $filename ]]
                         then
                                 printf "  * Updating $pre_dot with contents of $filename\n"
+                                mysql -u root -proot -Nse 'show tables' $pre_dot | while read table; do mysql -u root -proot -e "SET FOREIGN_KEY_CHECKS = 0; drop table $table" $pre_dot; done
+                                mysql -u root -proot $pre_dot < /srv/www/"$pre_dot"/public_html/wp-content/.db/$filename
                         # if found, import latest db backup
                         else
                         # if not found, skip it
@@ -207,5 +100,46 @@ then
 else
         printf "No custom databases to import\n"
 fi
+
 ```
+
+Place following snippet in Vagrantfile inside "if defined? VagrantPlugins::Triggers" block:
+```
+config.trigger.after :up, :stdout => true do
+	info "Updating databases..."
+	run_remote "bash /srv/database/import-custom-sql.sh"
+end
+```
+
+### Auto update sites from git
+This feature can be enabled on a per site basis. To activate it add the "auto_update" argument to a site in vvv-custom.yml, e.g.
+```auto_update: yes please```
+You will also need following snippet in your Vagrantfile:
+```
+# Git Updates and Pulls
+  # 
+  # If the update argument is specified on vagrant up, all sites will be pulled automatically.
+  # If the update argument is specified on vagrant halt, all sites will be commited and pushed
+  # automatically.
+
+  if ARGV[0] == "up"
+    puts "Saugeiler scheiss: pulling sites"
+    vvv_config['sites'].each do |site, args|
+      if args['auto_update']
+        puts "  * Pulling site "+site
+        system("cd "+args['local_dir']+"/public_html/wp-content && git pull origin master")
+      end
+    end
+  elsif ARGV[0] == "halt"
+    puts "Saugeiler scheiss: commiting and pushing sites"
+    vvv_config['sites'].each do |site, args|
+      if args['auto_update']
+        puts "  * Commiting and pushing site "+site
+        system("cd "+args['local_dir']+"/public_html/wp-content && git add -A && git commit -m 'vagrant auto-commit' && git push -u origin master")
+      end
+    end
+  end
+```
+
+
 
