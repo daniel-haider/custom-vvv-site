@@ -64,8 +64,14 @@ if ! $(noroot wp core is-installed); then
   cd ${VVV_PATH_TO_SITE}/public_html/wp-content/themes/${VVV_SITE_NAME}
   noroot composer install
 
-  echo "Add acf options page ..."
+  echo "Add acf options page to functions.php ..."
   printf "\nif( function_exists('acf_add_options_page') ) {\n  acf_add_options_page();\n}\n" >> resources/functions.php
+
+  echo "Add pre_comment_user_ip filter to functions.php ..."
+  printf "\nadd_filter( 'pre_comment_user_ip', 'wpb_remove_commentsip' );\nfunction  wpb_remove_commentsip( $comment_author_ip ) {\n  return '';\n}\n" >> resources/functions.php
+
+  echo "Add auto_update_plugin filter functions.php ..."
+  printf "\nadd_filter( 'auto_update_plugin', '__return_true' );\n" >> resources/functions.php
 
   echo "Activating roots sage theme ..."
   noroot wp theme activate ${VVV_SITE_NAME}/resources
