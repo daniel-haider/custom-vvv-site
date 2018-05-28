@@ -67,11 +67,17 @@ if ! $(noroot wp core is-installed); then
   echo "Add acf options page to functions.php ..."
   printf "\nif( function_exists('acf_add_options_page') ) {\n  acf_add_options_page();\n}\n" >> resources/functions.php
 
-  echo "Add pre_comment_user_ip filter to functions.php ..."
-  printf "\nadd_filter( 'pre_comment_user_ip', 'wpb_remove_commentsip' );\nfunction  wpb_remove_commentsip( $comment_author_ip ) {\n  return '';\n}\n" >> resources/functions.php
-
   echo "Add auto_update_plugin filter functions.php ..."
   printf "\nadd_filter( 'auto_update_plugin', '__return_true' );\n" >> resources/functions.php
+
+  echo "Add pre_comment_user_ip filter to dsgvo.php ..."
+  printf "\nadd_filter( 'pre_comment_user_ip', 'wpb_remove_commentsip' );\nfunction  wpb_remove_commentsip( $comment_author_ip ) {\n  return '';\n}\n" >> app/dsgvo.php
+
+  echo "Add gform_ip_disable filter to dsgvo.php ..."
+  printf "\nadd_filter( 'gform_ip_address', '__return_empty_string' );\n" >> app/dsgvo.php
+
+  echo "Add disable emoji filter to dsgvo.php ..."
+  printf "\nfunction disable_emojis() {\n  remove_action( 'wp_head', 'print_emoji_detection_script', 7 );\n  remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );\n  remove_action( 'wp_print_styles', 'print_emoji_styles' );\n  remove_action( 'admin_print_styles', 'print_emoji_styles' );  \n  remove_filter( 'the_content_feed', 'wp_staticize_emoji' );\n  remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );  \n  remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );\n  add_filter( 'tiny_mce_plugins', 'disable_emojis_tinymce' );\n}\nadd_action( 'init', 'disable_emojis' );\n\nfunction disable_emojis_tinymce( $plugins ) {\n  if ( is_array( $plugins ) ) {\n    return array_diff( $plugins, array( 'wpemoji' ) );\n  } else {\n    return array();\n  }\n}\n" >> app/dsgvo.php
 
   echo "Activating roots sage theme ..."
   noroot wp theme activate ${VVV_SITE_NAME}/resources
@@ -95,5 +101,3 @@ else
     sed -i "s#{{TLS_CERT}}##" "${VVV_PATH_TO_SITE}/provision/vvv-nginx.conf"
     sed -i "s#{{TLS_KEY}}##" "${VVV_PATH_TO_SITE}/provision/vvv-nginx.conf"
 fi
-
-# add acf-options page
