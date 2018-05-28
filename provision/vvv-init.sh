@@ -76,6 +76,9 @@ if ! $(noroot wp core is-installed); then
   echo "Add gform_ip_disable filter to dsgvo.php ..."
   printf "\nadd_filter( 'gform_ip_address', '__return_empty_string' );\n" >> app/dsgvo.php
 
+  echo "Inlude dsgvo.php in functions.php"
+  sed -i "s/'helpers', 'setup', 'filters', 'admin'/'helpers', 'setup', 'filters', 'admin', 'dsgvo'/g" resources/functions.php
+
   echo "Add disable emoji filter to dsgvo.php ..."
   printf "\nfunction disable_emojis() {\n  remove_action( 'wp_head', 'print_emoji_detection_script', 7 );\n  remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );\n  remove_action( 'wp_print_styles', 'print_emoji_styles' );\n  remove_action( 'admin_print_styles', 'print_emoji_styles' );  \n  remove_filter( 'the_content_feed', 'wp_staticize_emoji' );\n  remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );  \n  remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );\n  add_filter( 'tiny_mce_plugins', 'disable_emojis_tinymce' );\n}\nadd_action( 'init', 'disable_emojis' );\n\nfunction disable_emojis_tinymce( $plugins ) {\n  if ( is_array( $plugins ) ) {\n    return array_diff( $plugins, array( 'wpemoji' ) );\n  } else {\n    return array();\n  }\n}\n" >> app/dsgvo.php
 
