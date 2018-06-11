@@ -1,11 +1,9 @@
 # VVV Custom site template
 For when you just need a simple dev site ... with some additional features for collaborating purposes :) :)
 
-## Setup Default Themes & Plugins
+## Setup Default Plugins
 
-To install default plugins you need to create a directory 'default-plugins' which resides inside your vagrant folder (same level as www). Then put the plugins you wish to install inside this folder.
-
-To install a default theme create the folder 'default-theme' (same level as above) and put the theme inside it.
+To install default plugins you need to create a directory 'default-plugins' which resides inside your vagrant folder (same level as www). Then put the plugins you wish to install inside this folder. Note: the folder of the plugin and not as .zip
 
 ## Syncing Databases
 
