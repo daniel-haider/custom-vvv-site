@@ -18,25 +18,35 @@ create vagrant_halt_custom with following content in config/homebin:
 # are imported automatically during an initial provision if
 # the databases exist per the import-sql.sh process.
 DATE=$(date +"%Y%m%d%H%M%S")
-mysql -e 'show databases' | \
+mysql --user="root" --password="root" -e 'show databases' | \
 grep -v -F "information_schema" | \
 grep -v -F "performance_schema" | \
 grep -v -F "mysql" | \
 grep -v -F "test" | \
 grep -v -F "Database" | \
 while read dbname; do
-  mysqldump -uroot "$dbname" > /srv/database/backups/"$dbname".sql &&
-  mkdir -p /srv/www/"$dbname"/public_html/wp-content/.db &&
-  cp /srv/database/backups/"$dbname".sql /srv/www/"$dbname"/public_html/wp-content/.db/"$dbname"_$DATE.sql &&
-  echo "Database $dbname backed up (custom) ..."
+  mysqldump -uroot -proot "$dbname" > /srv/database/backups/"$dbname".sql
+  if [ ! -d "/srv/www/$dbname/public_html/wp-content/.db" ]; then
+    mkdir -p /srv/www/"$dbname"/public_html/wp-content/.db &&
+    cp /srv/database/backups/"$dbname".sql /srv/www/"$dbname"/public_html/wp-content/.db/"$dbname"_$DATE.sql &&
+    echo "Database $dbname backed up and copied to .db folder 1"
+  else
+    cmp -s <(head -n -2 /srv/database/backups/"$dbname".sql) <(head -n -2 /srv/www/"$dbname"/public_html/wp-content/.db/`ls -Art /srv/www/"$dbname"/public_html/wp-content/.db/ | tail -n 1`)
+    if [ $? -eq 0 ]; then
+      echo "Database $dbname backed up but not copied to .db folder since it hasn't changed"
+    else
+      echo "Database $dbname backed up and copied to .db folder"
+      cp /srv/database/backups/"$dbname".sql /srv/www/"$dbname"/public_html/wp-content/.db/"$dbname"_$DATE.sql
+    fi
+  fi
 done
 ```
 
 Then run "vagrant up --provision" (you need to provision all sites, when running with --provision-with the files won't be copied)
-Then ssh into your box, goto bin/ and:
+Then ssh into your box, goto /vagrant/config/homebin and:
 ```
-sudo chmod 755 ~/bin/vagrant_halt_custom
-sudo chmod +x ~/bin/vagrant_halt_custom
+sudo chmod 755 vagrant_halt_custom
+sudo chmod +x vagrant_halt_custom
 ```
 
 ### Import sites in vagrant up
